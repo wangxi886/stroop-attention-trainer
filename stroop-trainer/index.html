@@ -122,7 +122,7 @@
     <div class="home-info">
       <div>🎯 <span>训练内容</span>：判断墨水颜色，忽略字义干扰</div>
       <div>🔧 <span>自适应调节</span>：根据你的表现自动调整难度</div>
-      <div>⌨️ <span>操作方式</span>：键盘 R/G/B/Y 键对应 红/绿/蓝/黄</div>
+      <div>⌨️ <span>操作方式</span>：键盘 1/2/3/4 键对应 红/绿/蓝/黄</div>
       <div>📊 <span>数据记录</span>：所有训练数据保存在本地浏览器</div>
     </div>
     <div class="btn-group"><button class="btn btn-start" onclick="startTraining()">开始训练</button></div>
@@ -154,12 +154,12 @@
     <div class="stimulus" id="stimulus"></div>
     <div class="feedback" id="feedback"></div>
     <div class="key-hints">
-      <div class="key-hint key-red" onclick="handleKey('r')">R<div style="font-size:10px">红</div></div>
-      <div class="key-hint key-green" onclick="handleKey('g')">G<div style="font-size:10px">绿</div></div>
-      <div class="key-hint key-blue" onclick="handleKey('b')">B<div style="font-size:10px">蓝</div></div>
-      <div class="key-hint key-yellow" onclick="handleKey('y')">Y<div style="font-size:10px">黄</div></div>
+      <div class="key-hint key-red" data-key="1" onclick="handleKey('1')">1<div style="font-size:10px">红</div></div>
+      <div class="key-hint key-green" data-key="2" onclick="handleKey('2')">2<div style="font-size:10px">绿</div></div>
+      <div class="key-hint key-blue" data-key="3" onclick="handleKey('3')">3<div style="font-size:10px">蓝</div></div>
+      <div class="key-hint key-yellow" data-key="4" onclick="handleKey('4')">4<div style="font-size:10px">黄</div></div>
     </div>
-    <p style="font-size:12px;color:var(--sub);margin-top:8px;text-align:center">按键盘 R / G / B / Y 键选择颜色</p>
+    <p style="font-size:12px;color:var(--sub);margin-top:8px;text-align:center">按数字键 1 / 2 / 3 / 4 选择颜色</p>
   </div>
 
   <!-- ====== Block Complete ====== -->
@@ -260,10 +260,10 @@
 <script>
 // ==================== 全局状态 ====================
 const COLORS = [
-  { name:'红', key:'r', css:'#E74C3C' },
-  { name:'绿', key:'g', css:'#27AE60' },
-  { name:'蓝', key:'b', css:'#2980B9' },
-  { name:'黄', key:'y', css:'#D4A017' },
+  { name:'红', key:'1', css:'#E74C3C' },
+  { name:'绿', key:'2', css:'#27AE60' },
+  { name:'蓝', key:'3', css:'#2980B9' },
+  { name:'黄', key:'4', css:'#D4A017' },
 ];
 const COLOR_WORDS = ['红','绿','蓝','黄'];
 
@@ -394,7 +394,7 @@ function handleKey(key) {
     $('feedback').textContent = `✗ 错误 · 应选「${trial.color.name}」· ${rt} ms`;
     $('feedback').className = 'feedback wrong';
   }
-  const hint = document.querySelector('.key-'+key);
+  const hint = document.querySelector('[data-key="'+key+'"]');
   if (hint) { hint.classList.add('pressed'); setTimeout(()=>hint.classList.remove('pressed'),120); }
   st.currentTrial++;
   setTimeout(()=>showTrial(), 300);
@@ -415,8 +415,8 @@ function handleTimeout() {
 
 document.addEventListener('keydown', e => {
   if (!trainState||!trainState.waitingForResponse) return;
-  const key = e.key.toLowerCase();
-  if (['r','g','b','y'].includes(key)) { e.preventDefault(); handleKey(key); }
+  const key = e.key;
+  if (['1','2','3','4'].includes(key)) { e.preventDefault(); handleKey(key); }
 });
 
 // ==================== Block End & Adaptive ====================
@@ -460,8 +460,15 @@ function endBlock() {
   diffEl.style.background = diffMsg.includes('上调')?'#fdecea':diffMsg.includes('下调')?'#e8f5e9':'#f0f7ff';
   diffEl.style.color = diffMsg.includes('上调')?'#c0392b':diffMsg.includes('下调')?'#27ae60':'#2980b9';
 
-  $('bd-next-btn').style.display = (st.currentBlock+1<st.totalBlocks)?'':'none';
-  showPage('block-done');
+  if (st.currentBlock+1 < st.totalBlocks) {
+    $('bd-next-btn').style.display = '';
+    showPage('block-done');
+  } else {
+    // Last block: auto-save and show done page
+    saveSession();
+    updateDoneSummary();
+    showPage('done');
+  }
 }
 
 function nextBlock() {
