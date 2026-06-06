@@ -141,6 +141,7 @@
     <div class="setting-row"><label>训练组块数</label><select id="set-blocks"><option value="3">3 组</option><option value="5" selected>5 组</option><option value="8">8 组</option></select></div>
     <div class="setting-row"><label>初始不一致比例</label><select id="set-incongruent"><option value="40">40%（简单）</option><option value="50" selected>50%（中等）</option><option value="60">60%（困难）</option></select></div>
     <div class="setting-row"><label>初始呈现时间</label><select id="set-duration"><option value="2000">2000ms（慢）</option><option value="1500" selected>1500ms（中）</option><option value="1000">1000ms（快）</option></select></div>
+    <div class="setting-row"><label>训练模式</label><select id="set-mode"><option value="adaptive" selected>🧠 自适应（实验组）</option><option value="fixed">📌 固定难度（对照组）</option></select></div>
     <div class="btn-group">
       <button class="btn btn-outline btn-sm" onclick="resetDifficulty()">🔄 重置难度</button>
     </div>
@@ -274,6 +275,7 @@ const COLOR_WORDS = ['红','绿','蓝','黄'];
 let settings = {
   trialsPerBlock: 20, numBlocks: 5,
   initialIncongruentRatio: 50, initialDuration: 1500,
+  mode: "adaptive",
 };
 loadSettings();
 
@@ -295,7 +297,7 @@ function updateCarryoverHint() {
     const co = JSON.parse(localStorage.getItem('stroop-carryover'));
     if (co && (co.incongruentRatio > settings.initialIncongruentRatio || co.stimulusDuration < settings.initialDuration)) {
       hint.style.display = '';
-      hint.textContent = '🔥 已继承上次难度：干扰' + co.incongruentRatio + '% / 呈现' + co.stimulusDuration + 'ms（设置页可重置）';
+      hint.textContent = '🔥 已继承上次难度：干扰' + co.incongruentRatio + '% / 呈现' + co.stimulusDuration + 'ms · 当前模式：' + (settings.mode==='fixed'?'固定难度（对照组）':'自适应（实验组）');
     } else {
       hint.style.display = 'none';
     }
@@ -313,6 +315,7 @@ function loadSettings() {
   $('set-blocks').value = String(settings.numBlocks);
   $('set-incongruent').value = String(settings.initialIncongruentRatio);
   $('set-duration').value = String(settings.initialDuration);
+  .value = settings.mode || 'adaptive';
 }
 function resetDifficulty() {
   var prev = localStorage.getItem("stroop-carryover-prev");
@@ -365,7 +368,7 @@ function startTraining() {
     incongruentRatio: (function(){ try { var co=JSON.parse(localStorage.getItem("stroop-carryover")); return co.incongruentRatio||s.initialIncongruentRatio; }catch(e){ return s.initialIncongruentRatio; } })(),
     stimulusDuration: (function(){ try { var co=JSON.parse(localStorage.getItem("stroop-carryover")); return co.stimulusDuration||s.initialDuration; }catch(e){ return s.initialDuration; } })(),
     recentAccuracies: [], trialStartTime: 0, trialTimeoutId: null,
-    waitingForResponse: false,
+    waitingForResponse: false, adaptive: settings.mode === "adaptive",
   };
   questionnaireAnswers = null;
   startBlock();
@@ -472,23 +475,25 @@ function endBlock() {
 
   st.recentAccuracies.push(acc);
   if (st.recentAccuracies.length>2) st.recentAccuracies.shift();
-  let diffMsg = '';
-  if (st.recentAccuracies.length>=2) {
+  let diffMsg = "";
+  if (!st.adaptive) {
+    diffMsg = "📌 固定难度模式 · 难度不变";
+  } else if (st.recentAccuracies.length>=2) {
     const avg = st.recentAccuracies.reduce((a,b)=>a+b,0)/st.recentAccuracies.length;
     const oldInc = st.incongruentRatio, oldDur = st.stimulusDuration;
     if (avg>0.85&&st.recentAccuracies.every(a=>a>0.85)) {
       if (st.incongruentRatio<80) st.incongruentRatio+=5;
       if (st.stimulusDuration>500) st.stimulusDuration-=100;
-      diffMsg = '📈 表现优秀！难度上调';
+      diffMsg = "📈 表现优秀！难度上调";
     } else if (avg<0.60&&st.recentAccuracies.every(a=>a<0.60)) {
       if (st.incongruentRatio>40) st.incongruentRatio-=5;
       if (st.stimulusDuration<2000) st.stimulusDuration+=100;
-      diffMsg = '📉 稍作调整，难度下调';
-    } else { diffMsg = '✨ 难度保持不变，继续加油'; }
-    if (oldInc!==st.incongruentRatio) diffMsg += ` · 干扰比例 ${oldInc}%→${st.incongruentRatio}%`;
-    if (oldDur!==st.stimulusDuration) diffMsg += ` · 呈现时间 ${oldDur}ms→${st.stimulusDuration}ms`;
-  } else { diffMsg = '✨ 继续收集数据以自适应调节'; }
-  const diffEl = $('bd-diff-msg');
+      diffMsg = "📉 稍作调整，难度下调";
+    } else { diffMsg = "✨ 难度保持不变，继续加油"; }
+    if (oldInc!==st.incongruentRatio) diffMsg += " · 干扰比例 " + oldInc + "%→" + st.incongruentRatio + "%";
+    if (oldDur!==st.stimulusDuration) diffMsg += " · 呈现时间 " + oldDur + "ms→" + st.stimulusDuration + "ms";
+  } else { diffMsg = "✨ 继续收集数据以自适应调节"; }
+const diffEl = $('bd-diff-msg');
   diffEl.textContent = diffMsg;
   diffEl.style.background = diffMsg.includes('上调')?'#fdecea':diffMsg.includes('下调')?'#e8f5e9':'#f0f7ff';
   diffEl.style.color = diffMsg.includes('上调')?'#c0392b':diffMsg.includes('下调')?'#27ae60':'#2980b9';
@@ -596,7 +601,7 @@ function saveSession() {
       time: new Date().toISOString(),
     });
   }
-  const session = { blocks, date: new Date().toISOString(), completed: true, questionnaire: questionnaireAnswers };
+  const session = { blocks, date: new Date().toISOString(), completed: true, questionnaire: questionnaireAnswers, mode: settings.mode };
   // Store ALL trial data for box plots
   session.allTrials = all.map(r=>({ type:r.type, rt:r.rt||0, correct:r.correct, timeout:!!r.timeout, word:r.word, color:r.color, block:r.block }));
   const history = getHistory();
@@ -846,7 +851,7 @@ function updateStats() {
 function exportData() {
   const history = getHistory();
   if (history.length===0) { toast('没有数据可导出'); return; }
-  let csv = 'session,date,block,accuracy,avgRt,interference,incongruentRatio,stimulusDuration\n';
+  let csv = 'session,date,block,accuracy,avgRt,interference,incongruentRatio,stimulusDuration,mode\n';
   history.forEach((s,si)=>{ (s.blocks||[]).forEach(b=>{
     csv += [si+1, s.date||'', b.block, b.accuracy, b.avgRt, b.interference, b.incongruentRatio, b.stimulusDuration].join(',')+'\n';
   });});
