@@ -533,7 +533,8 @@ function submitQuestionnaire() {
   const history = getHistory();
   if (history.length>0) {
     history[history.length-1].questionnaire = answers;
-    localStorage.setItem('stroop-history', JSON.stringify(history));
+    console.log("[saveSession] saving to localStorage, history length:", history.length, "last session allTrials:", history[history.length-1].allTrials.length);
+	  localStorage.setItem("stroop-history", JSON.stringify(history));
   }
   toast('反馈已提交，谢谢！🙏');
   showPage('done');
@@ -546,6 +547,7 @@ function skipQuestionnaire() {
 // ==================== Data Persistence ====================
 function saveSession() {
   if (!trainState||trainState.allResults.length===0) return;
+  console.log("[saveSession] called, allResults:", trainState.allResults.length);
   const all = trainState.allResults;
   const blocks = [];
   for (let bi=0; bi<trainState.totalBlocks; bi++) {
@@ -567,7 +569,8 @@ function saveSession() {
   const history = getHistory();
   history.push(session);
   if (history.length>100) history.splice(0, history.length-100);
-  localStorage.setItem('stroop-history', JSON.stringify(history));
+  console.log("[saveSession] saving to localStorage, history length:", history.length, "last session allTrials:", history[history.length-1].allTrials.length);
+	  localStorage.setItem("stroop-history", JSON.stringify(history));
   localStorage.removeItem('stroop-current-session');
 }
 
@@ -609,11 +612,12 @@ function initCanvas(canvasId, w, h) {
 
 // --- Interference trend ---
 function drawInterferenceChart() {
+	  console.log("[drawInterferenceChart] called, history:", getHistory().length);
   const history = getHistory();
   const { ctx, w, h } = initCanvas('chart-interference', w, 280);
   const allBlocks = [];
   history.forEach((s,si)=>{ (s.blocks||[]).forEach(b=>{ allBlocks.push({s:si+1,bi:b.block,interference:b.interference||0}); }); });
-  if (allBlocks.length===0) {
+  if (allBlocks.length===0) { console.log("[drawDifficultyChart] no blocks data");
     ctx.fillStyle='#999'; ctx.font='15px "Microsoft YaHei"'; ctx.textAlign='center';
     ctx.fillText('暂无训练记录', w/2, h/2); return;
   }
@@ -658,10 +662,12 @@ function drawInterferenceChart() {
 
 // --- Box plot ---
 function drawBoxPlot() {
+	  console.log("[drawBoxPlot] called, history:", getHistory().length);
   const history = getHistory();
   const { ctx, w, h } = initCanvas('chart-boxplot', w, 300);
   const last = history[history.length-1];
-  if (!last||!last.allTrials) {
+  console.log("[drawBoxPlot] last:", last, "allTrials:", last?.allTrials);
+	  if (!last||!last.allTrials) {
     ctx.fillStyle='#999'; ctx.font='15px "Microsoft YaHei"'; ctx.textAlign='center';
     ctx.fillText('完成一次训练后可查看箱线图', w/2, h/2); return;
   }
@@ -718,6 +724,7 @@ function drawBoxPlot() {
 
 // --- Difficulty history ---
 function drawDifficultyChart() {
+	  console.log("[drawDifficultyChart] called, history:", getHistory().length);
   const history = getHistory();
   const { ctx, w, h } = initCanvas('chart-difficulty', w, 300);
   const allBlocks = [];
