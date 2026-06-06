@@ -47,14 +47,15 @@
 
   .setting-row { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 400px; padding: 10px 0; border-bottom: 1px solid var(--border); }
   .setting-row label { font-size: 14px; }
-  .setting-row select, .setting-row input { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 14px; min-width: 180px; text-align: center; }
+  .setting-row select, .setting-row input { padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 14px; }
 
   .train-top { display: flex; justify-content: space-between; width: 100%; margin-bottom: 8px; font-size: 13px; color: var(--sub); }
   .progress-bar { width: 100%; height: 6px; border-radius: 3px; background: var(--border); margin-bottom: 24px; overflow: hidden; }
   .progress-fill { height: 100%; background: #3498db; border-radius: 3px; transition: width 0.3s; }
 
-  .fixation { font-size: 48px; color: #333; height: 80px; display: flex; align-items: center; justify-content: center; user-select: none; }
-  .stimulus { font-size: 72px; font-weight: 900; height: 120px; display: flex; align-items: center; justify-content: center; user-select: none; letter-spacing: 4px; }
+  .stimulus-area { position: relative; height: 120px; }
+  .fixation { font-size: 48px; color: #333; position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; user-select: none; }
+  .stimulus { font-size: 72px; font-weight: 900; position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; user-select: none; letter-spacing: 4px; }
   .feedback { font-size: 18px; height: 28px; display: flex; align-items: center; justify-content: center; margin: 8px 0 16px; }
   .feedback.correct { color: #27AE60; } .feedback.wrong { color: #E74C3C; } .feedback.timeout { color: #F39C12; }
 
@@ -155,8 +156,10 @@
   <div class="page" id="page-training">
     <div class="train-top"><span id="train-block-info">第 1/5 组</span><span id="train-trial-info">1/20</span></div>
     <div class="progress-bar"><div class="progress-fill" id="train-progress" style="width:0%"></div></div>
-    <div class="fixation" id="fixation">+</div>
-    <div class="stimulus" id="stimulus"></div>
+    <div class="stimulus-area">
+      <div class="fixation" id="fixation">+</div>
+      <div class="stimulus" id="stimulus"></div>
+    </div>
     <div class="feedback" id="feedback"></div>
     <div class="key-hints">
       <div class="key-hint key-red" data-key="1" onclick="handleKey('1')">1<div style="font-size:10px">红</div></div>
@@ -384,7 +387,7 @@ function startBlock() {
   $('train-block-info').textContent = `第 ${st.currentBlock+1}/${st.totalBlocks} 组`;
   $('train-trial-info').textContent = `1/${st.trials.length}`;
   $('train-progress').style.width = '0%';
-  $('fixation').style.display = 'flex';
+  $("fixation").style.visibility = "visible";
   $('stimulus').textContent = '';
   $('feedback').textContent = '';
   $('feedback').className = 'feedback';
@@ -398,10 +401,10 @@ function showTrial() {
   $('train-trial-info').textContent = `${st.currentTrial+1}/${st.trials.length}`;
   $('train-progress').style.width = ((st.currentTrial/st.trials.length)*100) + '%';
   $('feedback').textContent = ''; $('feedback').className = 'feedback';
-  $('fixation').style.display = 'flex'; $('stimulus').textContent = '';
+  $("fixation").style.visibility = "visible"; $('stimulus').textContent = '';
   setTimeout(() => {
     if (st.paused) return;
-    $('fixation').style.display = 'none';
+    $("fixation").style.visibility = "hidden";
     $('stimulus').textContent = trial.word;
     $('stimulus').style.color = trial.color.css;
     st.waitingForResponse = true;
