@@ -614,7 +614,7 @@ function initCanvas(canvasId, w, h) {
 function drawInterferenceChart() {
 	  console.log("[drawInterferenceChart] called, history:", getHistory().length);
   const history = getHistory();
-  const { ctx, w, h } = initCanvas('chart-interference', w, 280);
+  const { ctx, w, h } = initCanvas('chart-interference', 0, 280);
   const allBlocks = [];
   history.forEach((s,si)=>{ (s.blocks||[]).forEach(b=>{ allBlocks.push({s:si+1,bi:b.block,interference:b.interference||0}); }); });
   if (allBlocks.length===0) { console.log("[drawDifficultyChart] no blocks data");
@@ -664,7 +664,7 @@ function drawInterferenceChart() {
 function drawBoxPlot() {
 	  console.log("[drawBoxPlot] called, history:", getHistory().length);
   const history = getHistory();
-  const { ctx, w, h } = initCanvas('chart-boxplot', w, 300);
+  const { ctx, w, h } = initCanvas('chart-boxplot', 0, 300);
   const last = history[history.length-1];
   console.log("[drawBoxPlot] last:", last, "allTrials:", last?.allTrials);
 	  if (!last||!last.allTrials) {
@@ -726,7 +726,7 @@ function drawBoxPlot() {
 function drawDifficultyChart() {
 	  console.log("[drawDifficultyChart] called, history:", getHistory().length);
   const history = getHistory();
-  const { ctx, w, h } = initCanvas('chart-difficulty', w, 300);
+  const { ctx, w, h } = initCanvas('chart-difficulty', 0, 300);
   const allBlocks = [];
   history.forEach((s,si)=>{ (s.blocks||[]).forEach(b=>{ allBlocks.push({s:si+1,bi:b.block, ...b}); }); });
   if (allBlocks.length===0) {
