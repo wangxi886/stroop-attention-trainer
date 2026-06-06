@@ -315,9 +315,17 @@ function loadSettings() {
   $('set-duration').value = String(settings.initialDuration);
 }
 function resetDifficulty() {
-  localStorage.removeItem("stroop-carryover");
-  updateCarryoverHint();
-  toast("难度已重置为初始值 🔄");
+  var prev = localStorage.getItem("stroop-carryover-prev");
+  if (prev) {
+    localStorage.setItem("stroop-carryover", prev);
+    localStorage.removeItem("stroop-carryover-prev");
+    updateCarryoverHint();
+    toast("已回退到上次难度 ↩️");
+  } else {
+    localStorage.removeItem("stroop-carryover");
+    updateCarryoverHint();
+    toast("没有更早的记录了，已重置为初始值");
+  }
 }
 
 function saveSettings() {
@@ -598,6 +606,9 @@ function saveSession() {
 	  localStorage.setItem("stroop-history", JSON.stringify(history));
   localStorage.removeItem('stroop-current-session');
     // Save carry-over difficulty for next session
+    // Push current carryover to prev before overwriting
+    var cur = localStorage.getItem('stroop-carryover');
+    if (cur) localStorage.setItem('stroop-carryover-prev', cur);
     localStorage.setItem('stroop-carryover', JSON.stringify({ incongruentRatio: trainState.incongruentRatio, stimulusDuration: trainState.stimulusDuration }));
 }
 
