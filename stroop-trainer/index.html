@@ -315,7 +315,7 @@ function loadSettings() {
   $('set-blocks').value = String(settings.numBlocks);
   $('set-incongruent').value = String(settings.initialIncongruentRatio);
   $('set-duration').value = String(settings.initialDuration);
-  .value = settings.mode || 'adaptive';
+  $('set-mode').value = settings.mode || 'adaptive';
 }
 function resetDifficulty() {
   var prev = localStorage.getItem("stroop-carryover-prev");
