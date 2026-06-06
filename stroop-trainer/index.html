@@ -126,6 +126,7 @@
       <div>📊 <span>数据记录</span>：所有训练数据保存在本地浏览器</div>
     </div>
     <div class="btn-group"><button class="btn btn-start" onclick="startTraining()">开始训练</button></div>
+    <p id="carryover-hint" style="font-size:12px;color:#e67e22;margin-top:10px;text-align:center;display:none"></p>
     <div class="btn-group">
       <button class="btn btn-outline btn-sm" onclick="showPage('settings')">⚙️ 设置</button>
       <button class="btn btn-outline btn-sm" onclick="showResults()">📊 训练记录</button>
@@ -140,6 +141,9 @@
     <div class="setting-row"><label>训练组块数</label><select id="set-blocks"><option value="3">3 组</option><option value="5" selected>5 组</option><option value="8">8 组</option></select></div>
     <div class="setting-row"><label>初始不一致比例</label><select id="set-incongruent"><option value="40">40%（简单）</option><option value="50" selected>50%（中等）</option><option value="60">60%（困难）</option></select></div>
     <div class="setting-row"><label>初始呈现时间</label><select id="set-duration"><option value="2000">2000ms（慢）</option><option value="1500" selected>1500ms（中）</option><option value="1000">1000ms（快）</option></select></div>
+    <div class="btn-group">
+      <button class="btn btn-outline btn-sm" onclick="resetDifficulty()">🔄 重置难度</button>
+    </div>
     <div class="btn-group">
       <button class="btn btn-primary" onclick="saveSettings();showPage('home')">💾 保存</button>
       <button class="btn btn-outline" onclick="showPage('home')">返回</button>
@@ -281,6 +285,21 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const el = $('page-' + name);
   if (el) el.classList.add('active');
+  if (name==='home') updateCarryoverHint();
+}
+
+function updateCarryoverHint() {
+  const hint = $('carryover-hint');
+  if (!hint) return;
+  try {
+    const co = JSON.parse(localStorage.getItem('stroop-carryover'));
+    if (co && (co.incongruentRatio > settings.initialIncongruentRatio || co.stimulusDuration < settings.initialDuration)) {
+      hint.style.display = '';
+      hint.textContent = '🔥 已继承上次难度：干扰' + co.incongruentRatio + '% / 呈现' + co.stimulusDuration + 'ms（设置页可重置）';
+    } else {
+      hint.style.display = 'none';
+    }
+  } catch(e) { hint.style.display = 'none'; }
 }
 function toast(msg) {
   const t = $('toast'); t.textContent = msg; t.classList.add('show');
@@ -295,6 +314,12 @@ function loadSettings() {
   $('set-incongruent').value = String(settings.initialIncongruentRatio);
   $('set-duration').value = String(settings.initialDuration);
 }
+function resetDifficulty() {
+  localStorage.removeItem("stroop-carryover");
+  updateCarryoverHint();
+  toast("难度已重置为初始值 🔄");
+}
+
 function saveSettings() {
   settings.trialsPerBlock = parseInt($('set-trials').value);
   settings.numBlocks = parseInt($('set-blocks').value);
@@ -329,8 +354,8 @@ function startTraining() {
   trainState = {
     currentBlock: 0, totalBlocks: s.numBlocks, currentTrial: 0,
     trials: [], blockResults: [], allResults: [],
-    incongruentRatio: s.initialIncongruentRatio,
-    stimulusDuration: s.initialDuration,
+    incongruentRatio: (function(){ try { var co=JSON.parse(localStorage.getItem("stroop-carryover")); return co.incongruentRatio||s.initialIncongruentRatio; }catch(e){ return s.initialIncongruentRatio; } })(),
+    stimulusDuration: (function(){ try { var co=JSON.parse(localStorage.getItem("stroop-carryover")); return co.stimulusDuration||s.initialDuration; }catch(e){ return s.initialDuration; } })(),
     recentAccuracies: [], trialStartTime: 0, trialTimeoutId: null,
     waitingForResponse: false,
   };
@@ -572,6 +597,8 @@ function saveSession() {
   console.log("[saveSession] saving to localStorage, history length:", history.length, "last session allTrials:", history[history.length-1].allTrials.length);
 	  localStorage.setItem("stroop-history", JSON.stringify(history));
   localStorage.removeItem('stroop-current-session');
+    // Save carry-over difficulty for next session
+    localStorage.setItem('stroop-carryover', JSON.stringify({ incongruentRatio: trainState.incongruentRatio, stimulusDuration: trainState.stimulusDuration }));
 }
 
 function getHistory() {
